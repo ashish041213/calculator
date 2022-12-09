@@ -1,0 +1,76 @@
+
+
+***************************************************build stage*****************************************************************
+
+
+	stage ('build stage'){
+		when {
+			anyOf{ 	
+				 branch ''
+			}
+		}
+		steps{
+				sh 'mvn clean install'
+
+		}
+	}
+***************************************************jUnitTest stage*****************************************************************
+
+
+	stage ('jUnitTest stage'){
+		when {
+			anyOf{ 	
+				 branch ''
+			}
+		}
+		steps{
+				junit 'target/surefire-reports/*.xml'
+
+		}
+	}
+***************************************************Maven Dependency Analysis*****************************************************************
+
+
+	stage ('Maven Dependency Analysis'){
+		when {
+			anyOf{ 	
+				 branch ''
+			}
+		}
+		steps{
+			echo '????????????? ? Maven Dependency Analysis ? ?????????????'
+			sh 'mvn com.nagarro.devops:maven-package-management:analyze'
+			publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, includes: '**/**', keepAll: true, reportDir: 'target/maven-package-management', reportFiles: 'report.html', reportName: 'Dependency Analysis Report', reportTitles: 'Dependency Analysis'])
+
+		}
+	}
+***************************************************SonarQube Scanner Stage*****************************************************************
+
+
+	stage ('SonarQube Scanner Stage'){
+		when {
+			anyOf{ 	
+				 branch ''
+			}
+		}
+		steps{
+				withSonarQubeEnv(credentialsId: 'c850b568-aa94-4ccd-bc48-ea1417247ca9') {
+					sh '${MAVEN_HOME}/bin/mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar'
+				}
+
+		}
+	}
+***************************************************email notify Stage*****************************************************************
+
+
+	stage ('email notify Stage'){
+		when {
+			anyOf{ 	
+				 branch ''
+			}
+		}
+		steps{
+			emailext body: '${JELLY_SCRIPT,template='health'}', mimeType: 'text/html', recipientProviders: [[$class: 'RequesterRecipientProvider']], replyTo: 'ashish.prasad@nagarro.com', subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: 'ashish.prasad@nagarro.com'
+
+		}
+	}
